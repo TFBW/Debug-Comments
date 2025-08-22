@@ -7,9 +7,9 @@ our $VERSION = '1.000';
 
 use Filter::Util::Call;
 
-our $COLOR = $ENV{NO_COLOR} ? '' : $ENV{DEBUG_COMMENTS_COLOR} // '0;34;47';
-our $CON   = $COLOR && -t STDERR ? "\e[${COLOR}m" : '';
-our $COFF  = $COLOR && -t STDERR ? "\e[0m"        : '';
+my $COLOR = $ENV{NO_COLOR} ? '' : $ENV{DEBUG_COMMENTS_COLOR} // '0;34;47';
+my $CON   = $COLOR && -t STDERR ? "\e[${COLOR}m" : '';
+my $COFF  = $COLOR && -t STDERR ? "\e[0m"        : '';
 
 sub import {
     my ($class, $prefix) = @_;
@@ -80,7 +80,7 @@ caution is required to ensure you don't translate something other than
 a comment into a debug output statement.  This module takes the
 pragmatic approach that a sufficiently distinctive prefix is good
 enough for the job.  You can choose your own if you aren't happy with
-the default.
+the default.  Mixed code-and-comment lines are never altered.
 
 Perl source filters in general are fraught with peril and should be
 used B<very> sparingly.  That said, this approach has significant
@@ -138,6 +138,34 @@ import this module: it does not magically enable other modules.
 
 If set to a true value, ANSI color output is disabled, following the
 no-color.org convention.
+
+=head1 LIMITATIONS
+
+These issues are addressed elsewhere in the documentation, but are
+repeated here to be sure they aren't missed.
+
+=head2 The filtering is simple, not smart
+
+This is a Perl source filter, and comes with all the usual caveats
+including compile-time processing overhead.  It does not try to
+distinguish between comment lines and things which look like comment
+lines in the middle of multi-line strings.  Choose a distinctive
+prefix to avoid unintended conversion if the default is inadequate.
+
+=head2 Debug comments are double-quoted strings, no backticks
+
+Debug comments are converted to double-quoted strings to be printed
+via warn().  All the usual syntactic constraints on variable
+interpolation and backslash escapes apply.  Backtick characters are
+not permitted: they will be stripped and evoke a compile-time warning
+if present.
+
+=head2 No unimport
+
+You can't turn the feature off with "no" part-way through the file.
+The recommended approach is to have an all-or-nothing "use if" near
+the head of the file conditioned on an environment variable or some
+other preferred debug-mode indicator.
 
 =head1 SEE ALSO
 
