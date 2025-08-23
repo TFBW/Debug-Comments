@@ -14,6 +14,7 @@ my %WriteMakefileArgs = (
         'ExtUtils::MakeMaker' => '0',
     },
     TEST_REQUIRES => {
+        'File::Temp' => '0',
         'Test::More' => '0.99', # subtests
     },
     PREREQ_PM => {
