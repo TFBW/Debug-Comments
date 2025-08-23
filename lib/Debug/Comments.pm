@@ -25,7 +25,7 @@ sub import {
     }
     filter_add sub {
         my $status = filter_read();
-        if ($status > 0 and /^(\s*)#$prefix\s*(.*)/) {
+        if ($status > 0 and /^(\s*)#$prefix\s+(\S.*)/) {
             my $debug = $2;
             my $stripwarn =
                 $debug =~ tr/`//d ?
@@ -95,19 +95,33 @@ overhead for the debug code when excluded: they are simple comments.
 The recommended way to incorporate this module is as per the synopsis:
 a "use if" pragma conditioned on an environment variable which you set
 to trigger the debug mode.  The import method takes a single optional
-argument: the debug-comment identifier string.  This defaults to "@!"
-such that lines starting with optional whitespace then "#@!" are
-interpreted as debug comments.  Note that the leading "#" is fixed:
-you can only specify the following characters.  Ensure that the string
-is distinctive enough to prevent matching on non-comment lines such as
-the contents of multi-line strings.
+argument: the debug-comment identifier string, defaulting to "@!".
 
-Whitespace after the debug-comment identifier is ignored; the rest of
-the line is interpreted as a double-quoted string to emit via warn at
-this point.  This means that variables will be interpolated and must
-exist or compilation will fail.  Backtick characters are not allowed
-in this string: they are used as delimiters in the generated code.
-Any backticks present will be stripped and evoke a warning.
+The debug-comment identifier string sets a fairly tight constraint on
+what's recognised as a debug comment.  A debug comment line starts
+with optional whitespace, then "#", then the identifier string, then
+whitespace, then some non-whitespace debug text.  Any line matching
+this pattern is treated as a debug comment; other lines are untouched.
+Ensure that the identifier string is distinctive enough to prevent
+matching on non-comment lines such as multi-line strings.
+
+    #@! This is a debug comment using the default identifier.
+        #@! So is this: the indent is not significant.
+    #@!~ This isn't one: the identifier string doesn't match.
+    #@!This isn't one either due to the lack of whitespace.
+    ...; #@! Mixed code and comment lines never match.
+    #@!
+    # The above line doesn't match because there's no text.
+    my $oopsie = <<'EOT';
+    #@! This matches, but it's not a comment!
+    EOT
+
+Whitespace after the debug-comment identifier is required but skipped;
+the rest of the line is interpreted as a double-quoted string to emit
+via warn at this point.  This means that variables are interpolated
+and must exist or compilation will fail.  Backticks are not allowed:
+they are used as delimiters in the generated code.  Any backticks
+present will be stripped and evoke a warning.
 
 The output will be prefixed with a relative timestamp, the filename,
 and line number of the debug comment.  This prefix will have ANSI
@@ -132,7 +146,9 @@ which debug comments are to be enabled.  If a module name ends in "*",
 it is interpreted as a left-side match rather than a full match, so
 "Foo::*" would enable debug comments for any module in the "Foo::"
 namespace.  Note that this only selectively disables things which
-import this module: it does not magically enable other modules.
+import this module: it does not magically enable other modules.  Note
+also that the relevant package name is whatever one was in effect at
+the time B<Debug::Comments> was used in a module.
 
 =head2 NO_COLOR
 
@@ -162,10 +178,17 @@ if present.
 
 =head2 No unimport
 
-You can't turn the feature off with "no" part-way through the file.
-The recommended approach is to have an all-or-nothing "use if" near
-the head of the file conditioned on an environment variable or some
-other preferred debug-mode indicator.
+You can't turn the feature off with "no" part-way through the file,
+and it's not a pragma, restricted to an enclosing BLOCK: the source
+filter remains in effect from initial use to end of file or __END__
+marker.  The recommended approach is to have an all-or-nothing "use
+if" near the head of the file (but after the package declaration, if
+any), conditioned on an environment variable or some other preferred
+debug-mode indicator.
+
+Importing more than once does not replace the old filter: it adds a
+new one.  In principle this can mean independent sets of debug
+comments with different prefixes, but I'm not advocating it.
 
 =head1 SEE ALSO
 
@@ -178,7 +201,7 @@ long time.  If you like the idea of this module but think it needs
 more bells, whistles, flashing lights, and spinning hubcaps, try it.
 
 L<Debug::Filter::PrintExpr> is a similar concept which is more attuned
-to dumping data structures at strategic points.
+to dumping data structures.
 
 =head1 LICENSE AND COPYRIGHT
 
