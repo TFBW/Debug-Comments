@@ -72,7 +72,7 @@ The output is primarily intended to provide a visual trace of where
 your code is going, so it includes the filename and line number where
 the debug comment is located.  This part is colour-coded on TTY output
 by default to make it visually distinct.  Aside from that, the comment
-is interpreted as though it appeared in qouble-quotes at that point in
+is interpreted as though it appeared in double-quotes at that point in
 your code, allowing display of most simple values.
 
 This filter tries to be super-simple rather than super-smart, so some
